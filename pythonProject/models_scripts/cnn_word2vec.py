@@ -13,6 +13,21 @@ word2vec_model = Word2Vec(sentences=tokenized_sentences, vector_size=100, window
 
 word_index = {word: i + 1 for i, word in enumerate(word2vec_model.wv.index_to_key)}
 
+def get_weight_matrix():
+    vocab_size = len(word_index) + 1
+    vector_size = word2vec_model.vector_size
+    weight_matrix = np.zeros((vocab_size, vector_size))
+
+    for word, i in word_index.items():
+        if word in word2vec_model.wv:
+            weight_matrix[i] = word2vec_model.wv[word]
+
+    return weight_matrix
+
+
+# Getting embedding vectors from word2vec and usings it as weights of non-trainable keras embedding layer
+embedding_vectors = get_weight_matrix()
+
 def text_to_sequence(text, word_index):
     return [word_index[word] for word in text.split() if word in word_index]
 
@@ -37,7 +52,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 
 # Model architecture
 model = Sequential([
-    Embedding(input_dim=len(word_index) + 1, output_dim=100, input_length=100),
+    Embedding(input_dim=len(word_index) + 1, weights=[embedding_vectors], output_dim=100),
     Conv1D(filters=128, kernel_size=5, activation='relu', kernel_regularizer=l2(0.01)),
     Dropout(0.5),
     MaxPooling1D(pool_size=2),
